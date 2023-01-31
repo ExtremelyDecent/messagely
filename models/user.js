@@ -28,7 +28,7 @@ class User {
           join_at,
           last_login_at)
         VALUES ($1, $2, $3, $4, $5, current_timestamp, current_timestamp)
-        RETURNING id, username, password, first_name, last_name, phone`,
+        RETURNING username, password, first_name, last_name, phone`,
         [username, hashedPassword, first_name, last_name, phone]
     );
 
@@ -43,13 +43,13 @@ class User {
       [username]
     );
     let user = result.rows[0];
-    return user && await bcrypt.compare(password, user.password);
+    return (user && await bcrypt.compare(password, user.password));
   }
 
   /** Update last_login_at for user */
 
   static async updateLoginTimestamp(username) { 
-    const results = await db.query(
+    const result = await db.query(
     `UPDATE users
       SET last_login_at = current_timestamp
       WHERE username = $1
@@ -117,17 +117,17 @@ class User {
     const result = await db.query(
       `SELECT m.id,
         m.to_username,
-        m.first_name,
+        u.first_name,
         u.last_name,
         u.phone,
-        u.body,
+        m.body,
         m.sent_at,
         m.read_at
       FROM messages AS m
         JOIN users AS u ON m.to_username = u.username
       WHERE from_username = $1`,[username]
     );
-    return results.rows.map(m=>({
+    return result.rows.map(m=>({
       id: m.id,
       to_user:{
         username: m.to_username,
@@ -162,7 +162,8 @@ class User {
         FROM messages AS m
          JOIN users AS u ON m.from_username = u.username
         WHERE to_username = $1`,
-      [username]);
+      [username]
+    );
 
     return result.rows.map(m => ({
       id: m.id,
